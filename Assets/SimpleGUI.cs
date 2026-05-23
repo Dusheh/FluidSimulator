@@ -13,6 +13,8 @@ public class SimpleGUI : MonoBehaviour
     public static long creeperCount;
     void OnGUI()
     {
+#if DEBUG
         GUI.Label(creeperCountRect, creeperCount.ToString());
+#endif
     }
 }
