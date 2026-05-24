@@ -2,10 +2,10 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class FluidSimulator
+public class FluidSimulatorOld
 {
     public readonly int width, height, depth;
-    public FluidSimulator(int Width, int Height, int Depth)
+    public FluidSimulatorOld(int Width, int Height, int Depth)
     {
         width = Width;
         height = Height;
@@ -22,9 +22,7 @@ public class FluidSimulator
 
     private void BoundsFlow()
     {
-#if DEBUG
         SimpleGUI.creeperCount = 0;
-#endif
 
         int cursor = 0;
         cursor += (height + 2) * (depth + 2);

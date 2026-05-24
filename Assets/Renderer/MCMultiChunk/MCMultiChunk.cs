@@ -15,11 +15,13 @@ public partial class MCMultiChunk : MonoBehaviour
 
     public int cX, cY, cZ;
 
+    public int startX, startY, startZ;
+
     public void Initialize()
     {
-        simulator = new FluidSimulator(chunkSize, chunkSize, chunkSize);
+        /*simulator = new FluidSimulator(chunkSize, chunkSize, chunkSize);
         simulator.CreateData();
-        simulator.data[simulator.GetIndex(3, 4, 4)] = 5000;
+        simulator.data[simulator.GetIndex(3, 4, 4)] = 5000;*/
         mesh = new Mesh();
         meshFilter = GetComponent<MeshFilter>();
         meshRenderer = GetComponent<MeshRenderer>();
@@ -76,7 +78,9 @@ public partial class MCMultiChunk : MonoBehaviour
                 {
                     int cubeIndex = 0;
 
-                    int baseIndex = (vx + 1) * (simulator.depth + 2) * (simulator.height + 2) + (vy + 1) * (simulator.depth + 2) + (vz + 1);
+                    int nx = vx + startX, ny = vy + startY, nz = vz + startZ;
+
+                    int baseIndex = (nx + 1) * (simulator.depth + 2) * (simulator.height + 2) + (ny + 1) * (simulator.depth + 2) + (nz + 1);
 
                     cubeIndex |= simulator.data[baseIndex] > isoLevel ? 1 : 0;
                     cubeIndex |= simulator.data[baseIndex + (simulator.depth + 2) * (simulator.height + 2)] > isoLevel ? 2 : 0;
@@ -152,7 +156,7 @@ public partial class MCMultiChunk : MonoBehaviour
 
     public void FixedUpdate()
     {
-        simulator.DoFlow();
+        //simulator.DoFlow();
         //simulator.data[simulator.GetIndex(2, 2, 2)] = 50;
     }
 
@@ -199,4 +203,9 @@ public partial class MCMultiChunk : MonoBehaviour
     int XEdgeIndex(int x, int y, int z) => z * (chunkSize * (chunkSize - 1)) + y * (chunkSize - 1) + x;
     int YEdgeIndex(int x, int y, int z) => cX + z * (chunkSize * (chunkSize - 1)) + y * chunkSize + x;
     int ZEdgeIndex(int x, int y, int z) => cX + cY + z * (chunkSize * chunkSize) + y * chunkSize + x;
+
+    public void OnDrawGizmosSelected()
+    {
+        Gizmos.DrawWireCube(Vector3.one * 8 + transform.position, Vector3.one * 15);   
+    }
 }

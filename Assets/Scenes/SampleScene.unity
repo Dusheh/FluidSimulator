@@ -244,13 +244,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   chunks: []
   material: {fileID: 10303, guid: 0000000000000000f000000000000000, type: 0}
-  chunkCountOfX: 1
-  chunkCountOfY: 1
-  chunkCountOfZ: 1
+  chunkCountOfX: 4
+  chunkCountOfY: 4
+  chunkCountOfZ: 4
   mapSizeX: 0
   mapSizeY: 0
   mapSizeZ: 0
   chunkSize: 16
+  waterCoord: {x: 16, y: 16, z: 16}
 --- !u!4 &742026090
 Transform:
   m_ObjectHideFlags: 0
