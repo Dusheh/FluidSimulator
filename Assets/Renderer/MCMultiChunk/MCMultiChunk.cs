@@ -68,13 +68,10 @@ public partial class MCMultiChunk : MonoBehaviour
         int sizez = chunkSize;
 
         for (int vx = 0; vx < sizex - 1; vx++)
-        //for (int vx = 1; vx < sizex; vx++)
         {
             for (int vy = 0; vy < sizey - 1; vy++)
-        //    for (int vy = 1; vy < sizey; vy++)
             {
                 for (int vz = 0; vz < sizez - 1; vz++)
-        //        for (int vz = 1; vz < sizez; vz++)
                 {
                     int cubeIndex = 0;
 
@@ -93,16 +90,13 @@ public partial class MCMultiChunk : MonoBehaviour
 
                     if (cubeIndex == 0 || cubeIndex == 255) continue;
 
-                    //int[] edges = triTable[cubeIndex];
                     for (int i = 0; i < 16; i += 3)
                     {
                         int e0 = triTable[cubeIndex, i];
-                        if (e0 < 0) break; // 遇到 -1 结束
+                        if (e0 < 0) break; 
 
                         int e1 = triTable[cubeIndex, i + 2];
                         int e2 = triTable[cubeIndex, i + 1];
-
-                        //cursor += 3;
 
                         int v;
                         int gx = vx + edgeInfo[e0].dx;
@@ -116,7 +110,6 @@ public partial class MCMultiChunk : MonoBehaviour
                             v = cX + cY + gz * (chunkSize * chunkSize) + gy * chunkSize + gx;
                         if (cursor < arrayCount)
                         {
-
                             triangles[cursor++] = v;//triangles.Add(v);
                         }
                         else { triangles.Add(v); cursor++; arrayCount++; }
@@ -154,15 +147,9 @@ public partial class MCMultiChunk : MonoBehaviour
         mesh.RecalculateNormals();       // 可选
     }
 
-    public void FixedUpdate()
+    public void myUpdate()
     {
-        //simulator.DoFlow();
-        //simulator.data[simulator.GetIndex(2, 2, 2)] = 50;
-    }
-
-    public void Update()
-    {
-        RefreshIndices();
+        //RefreshIndices();
     }
 
     // 这里有强耦合代码
@@ -204,8 +191,11 @@ public partial class MCMultiChunk : MonoBehaviour
     int YEdgeIndex(int x, int y, int z) => cX + z * (chunkSize * (chunkSize - 1)) + y * chunkSize + x;
     int ZEdgeIndex(int x, int y, int z) => cX + cY + z * (chunkSize * chunkSize) + y * chunkSize + x;
 
-    public void OnDrawGizmosSelected()
+    public bool renderEdge = false;
+
+    public void disableOnDrawGizmosSelected()
     {
+        if (!renderEdge) return;
         Gizmos.DrawWireCube(Vector3.one * 8 + transform.position, Vector3.one * 15);   
     }
 }

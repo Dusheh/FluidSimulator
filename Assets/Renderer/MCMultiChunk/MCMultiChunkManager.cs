@@ -24,6 +24,8 @@ public class MCMultiChunkManager : MonoBehaviour
     [Min(1)]
     public int chunkSize = 16;
 
+    public int isoLevel = 50000;
+
     [Header("Water Coord")]
     public Vector3Int waterCoord;
 
@@ -40,7 +42,12 @@ public class MCMultiChunkManager : MonoBehaviour
         simController = new FluidSimController();
         simController.simulator = simulator;
         simulator.CreateData();
-        simulator.data[simulator.GetIndex(mapSizeX / 2, mapSizeY / 2, mapSizeZ / 2)] = 5000;
+        //simulator.data[simulator.GetIndex(mapSizeX / 2, mapSizeY / 2, mapSizeZ / 2)] = 5000;
+
+        for (int i = 0; i < 100; i++)
+        {
+            simulator.data[Random.Range(0, simulator.data.Length)] = Random.Range(50000,100000);
+        }
 
         simController.fluidSimShader = fluidSimShader;
         simController.width = mapSizeX;
@@ -65,6 +72,7 @@ public class MCMultiChunkManager : MonoBehaviour
                     mc.startX = x * (chunkSize - 1);
                     mc.startY = y * (chunkSize - 1);
                     mc.startZ = z * (chunkSize - 1);
+                    mc.isoLevel = isoLevel;
                     mc.Initialize();
                 }
     }
@@ -78,6 +86,14 @@ public class MCMultiChunkManager : MonoBehaviour
     {
         //simulator.DoFlow();
         simController.FixedUpdate();
+    }
+
+    public void Update()
+    {
+        foreach (var i in chunks)
+        {
+            i.myUpdate();
+        }
     }
 
     public void OnDestroy()

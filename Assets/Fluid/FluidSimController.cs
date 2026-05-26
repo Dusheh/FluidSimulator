@@ -11,6 +11,7 @@ public class FluidSimController
     public ComputeBuffer nextBuffer;
     public ComputeBuffer resuBuffer;
     public ComputeBuffer propBuffer;
+    public int kernelInit;
     [HideInInspector]
     public int kernelMain;
     [HideInInspector]
@@ -65,15 +66,16 @@ public class FluidSimController
 
     public void SetValues()
     {
-        int[] prop = new int[6]
-            { width, height, depth, width + 2, height + 2, depth + 2 };
+        int[] prop = new int[9]
+            { width, height, depth, width + 2, height + 2, depth + 2,
+            1/*StrideZ*/, depth+2, (depth+2)*(height+2) };
         /*fluidSimShader.SetInt("width", width);
         fluidSimShader.SetInt("height", height);
         fluidSimShader.SetInt("depth", depth);
         fluidSimShader.SetInt("fullW", width + 2);
         fluidSimShader.SetInt("fullH", height + 2);
         fluidSimShader.SetInt("fullD", depth + 2);*/
-        propBuffer = new ComputeBuffer(6, sizeof(int));
+        propBuffer = new ComputeBuffer(9, sizeof(int));
         propBuffer.SetData(prop);
         fluidSimShader.SetBuffer(kernelMain, "prop", propBuffer);
         fluidSimShader.SetBuffer(kernelX, "prop", propBuffer);
@@ -89,11 +91,11 @@ public class FluidSimController
     int[] buf;
     public void GetValue()
     {
-        resuBuffer.GetData(buf);
-        Debug.Log(buf[0]);
-        Debug.Log(buf[1]);
-        Debug.Log(buf[2]);
-        Debug.Log(buf[3]);
+        //resuBuffer.GetData(buf);
+        //Debug.Log(buf[0]);
+        //Debug.Log(buf[1]);
+        //Debug.Log(buf[2]);
+        //Debug.Log(buf[3]);
         return;
         for (int i = 0; i < buf.Length; i++)
         {
@@ -123,7 +125,7 @@ public class FluidSimController
     public void FixedUpdate()
     {
         DoFlowGPU();
-        dataBuffer.GetData(simulator.data);
+        //dataBuffer.GetData(simulator.data);
         GetValue();
     }
 

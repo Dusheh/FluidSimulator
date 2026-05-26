@@ -244,13 +244,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   chunks: []
   material: {fileID: 10303, guid: 0000000000000000f000000000000000, type: 0}
-  chunkCountOfX: 4
-  chunkCountOfY: 4
-  chunkCountOfZ: 4
+  chunkCountOfX: 32
+  chunkCountOfY: 16
+  chunkCountOfZ: 32
   mapSizeX: 0
   mapSizeY: 0
   mapSizeZ: 0
   chunkSize: 16
+  isoLevel: 300
   waterCoord: {x: 16, y: 16, z: 16}
   fluidSimShader: {fileID: 7200000, guid: 22daf086b475744f4aa8ab716ae1606a, type: 3}
 --- !u!4 &742026090
