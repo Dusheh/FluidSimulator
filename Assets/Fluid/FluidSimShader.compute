@@ -1,0 +1,104 @@
+﻿#pragma kernel BoundFlow
+#pragma kernel EdgeFlow_X
+#pragma kernel EdgeFlow_Y
+#pragma kernel EdgeFlow_Z
+
+#pragma enable_d3d11_debug_symbols
+
+/*cbuffer SimParams : register(b0)
+{
+    int width;
+    int height;
+    int depth;
+    int fullW;
+    int fullH;
+    int fullD;
+};*/
+
+StructuredBuffer<int> prop;
+
+RWStructuredBuffer<int> data;
+RWStructuredBuffer<int> next;
+
+RWStructuredBuffer<int> resu;
+
+[numthreads(8,8,16)]
+void BoundFlow (uint3 id : SV_DispatchThreadID)
+{
+    int x = id.x + 1;
+    int y = id.y + 1;
+    int z = id.z + 1;
+
+    int strideZ = 1;                          
+    int strideY = prop[5] * strideZ;            
+    int strideX = prop[4] * strideY;            
+    int index = x * strideX + y * strideY + z * strideZ;
+
+    int center = data[index];
+    int val = center - (center / 7) * 6;
+    //InterlockedAdd(resu[0],prop[0]);
+    //InterlockedAdd(resu[1],prop[1]);
+    //InterlockedAdd(resu[2],prop[2]);
+    //InterlockedAdd(resu[3],val);
+    //resu[0] = strideZ;
+
+    val += data[index + strideX] / 7;    // x+1
+    val += data[index - strideX] / 7;    // x-1
+    val += data[index + strideY] / 7;    // y+1
+    val += data[index - strideY] / 7;    // y-1
+    val += data[index + strideZ] / 7;    // z+1
+    val += data[index - strideZ] / 7;    // z-1
+
+    next[index] = val;
+}
+
+[numthreads(8,8,1)]
+void EdgeFlow_X (uint2 id : SV_DispatchThreadID)
+{
+    int y = id.x + 1;
+    int z = id.y + 1;
+
+    int strideX = prop[4] * prop[5];
+    int strideY = prop[5];
+    int strideZ = 1;
+
+    int index_x0 = 0 * strideX + y * strideY + z * strideZ;
+    next[index_x0 + strideX] += data[index_x0] / 7;
+
+    int index_xMax = (prop[0]+1) * strideX + y * strideY + z * strideZ;
+    next[index_xMax - strideX] += data[index_xMax] / 7;
+}
+
+[numthreads(8,8,1)]
+void EdgeFlow_Y (uint2 id : SV_DispatchThreadID)
+{
+    int x = id.x + 1;
+    int z = id.y + 1;
+
+    int strideX = prop[4] * prop[5];
+    int strideY = prop[5];
+    int strideZ = 1;
+
+    int index_y0 = x * strideX + 0 * strideY + z * strideZ;
+    next[index_y0 + strideY] += data[index_y0] / 7;
+
+    int index_yMax = x * strideX + (prop[1]+1) * strideY + z * strideZ;
+    next[index_yMax - strideY] += data[index_yMax] / 7;
+}
+
+[numthreads(8,8,1)]
+void EdgeFlow_Z (uint2 id : SV_DispatchThreadID)
+{
+    int x = id.x + 1;
+    int y = id.y + 1;
+
+    int strideX = prop[4] * prop[5];
+    int strideY = prop[5];
+    int strideZ = 1;
+
+    int index_z0 = x * strideX + y * strideY + 0 * strideZ;
+    next[index_z0 + strideZ] += data[index_z0] / 7;
+
+    int index_zMax = x * strideX + y * strideY + (prop[2]+1) * strideZ;
+    next[index_zMax - strideZ] += data[index_zMax] / 7;
+}

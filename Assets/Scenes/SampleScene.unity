@@ -252,6 +252,7 @@ MonoBehaviour:
   mapSizeZ: 0
   chunkSize: 16
   waterCoord: {x: 16, y: 16, z: 16}
+  fluidSimShader: {fileID: 7200000, guid: 22daf086b475744f4aa8ab716ae1606a, type: 3}
 --- !u!4 &742026090
 Transform:
   m_ObjectHideFlags: 0

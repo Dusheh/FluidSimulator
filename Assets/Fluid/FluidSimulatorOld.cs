@@ -22,7 +22,9 @@ public class FluidSimulatorOld
 
     private void BoundsFlow()
     {
+#if DEBUG
         SimpleGUI.creeperCount = 0;
+#endif
 
         int cursor = 0;
         cursor += (height + 2) * (depth + 2);

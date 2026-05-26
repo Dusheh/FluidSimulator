@@ -28,19 +28,30 @@ public class MCMultiChunkManager : MonoBehaviour
     public Vector3Int waterCoord;
 
     public FluidSimulator simulator;
-
+    public FluidSimController simController;
+    public ComputeShader fluidSimShader;
+    
     public void Initialize()
     {
         mapSizeX = chunkCountOfX * chunkSize;
         mapSizeY = chunkCountOfY * chunkSize;
         mapSizeZ = chunkCountOfZ * chunkSize;
         simulator = new FluidSimulator(mapSizeX, mapSizeY, mapSizeZ);
+        simController = new FluidSimController();
+        simController.simulator = simulator;
         simulator.CreateData();
         simulator.data[simulator.GetIndex(mapSizeX / 2, mapSizeY / 2, mapSizeZ / 2)] = 5000;
+
+        simController.fluidSimShader = fluidSimShader;
+        simController.width = mapSizeX;
+        simController.height = mapSizeY;
+        simController.depth = mapSizeZ;
+        simController.Awake();
+        simController.CreateData(mapSizeX, mapSizeY, mapSizeZ);
         //simulator.data[simulator.GetIndex(waterCoord.x, waterCoord.y, waterCoord.z)] = 100000;
         for (int x = 0; x < chunkCountOfX; x++)
-        for(int y = 0; y < chunkCountOfY; y++)
-        for(int z = 0; z < chunkCountOfZ; z++)
+        for (int y = 0; y < chunkCountOfY; y++)
+        for (int z = 0; z < chunkCountOfZ; z++)
                 {
                     var chunk = new GameObject($"Chunk {x},{y},{z}");
                     var mc = chunk.AddComponent(typeof(MCMultiChunk)) as MCMultiChunk;
@@ -55,7 +66,6 @@ public class MCMultiChunkManager : MonoBehaviour
                     mc.startY = y * (chunkSize - 1);
                     mc.startZ = z * (chunkSize - 1);
                     mc.Initialize();
-                    
                 }
     }
 
@@ -66,6 +76,12 @@ public class MCMultiChunkManager : MonoBehaviour
 
     public void FixedUpdate()
     {
-        simulator.DoFlow();
+        //simulator.DoFlow();
+        simController.FixedUpdate();
+    }
+
+    public void OnDestroy()
+    {
+        simController.OnDestroy();
     }
 }
