@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Profiling;
 
 public class FluidSimController
 {
@@ -68,13 +69,7 @@ public class FluidSimController
     {
         int[] prop = new int[9]
             { width, height, depth, width + 2, height + 2, depth + 2,
-            1/*StrideZ*/, depth+2, (depth+2)*(height+2) };
-        /*fluidSimShader.SetInt("width", width);
-        fluidSimShader.SetInt("height", height);
-        fluidSimShader.SetInt("depth", depth);
-        fluidSimShader.SetInt("fullW", width + 2);
-        fluidSimShader.SetInt("fullH", height + 2);
-        fluidSimShader.SetInt("fullD", depth + 2);*/
+            1, depth+2, (depth+2)*(height+2) };
         propBuffer = new ComputeBuffer(9, sizeof(int));
         propBuffer.SetData(prop);
         fluidSimShader.SetBuffer(kernelMain, "prop", propBuffer);
@@ -85,35 +80,21 @@ public class FluidSimController
         fluidSimShader.SetBuffer(kernelMain, "prop", propBuffer);
         resuBuffer = new ComputeBuffer(simulator.data.Length, sizeof(int));
         fluidSimShader.SetBuffer(kernelMain, "resu", resuBuffer);
-        buf = new int[simulator.data.Length];
+        //buf = new int[simulator.data.Length];
     }
 
+    [System.Obsolete]
     int[] buf;
+    [System.Obsolete]
     public void GetValue()
     {
-        //resuBuffer.GetData(buf);
-        //Debug.Log(buf[0]);
-        //Debug.Log(buf[1]);
-        //Debug.Log(buf[2]);
-        //Debug.Log(buf[3]);
-        return;
-        for (int i = 0; i < buf.Length; i++)
-        {
-            if (buf[i] == 0)
-            {
-                var x = i / ((depth + 2) * (height + 2));
-                var y = (i / (depth + 2)) % (height + 2);
-                var z = i % (depth + 2);
-                if (x == 0 || y == 0 || z == 0 || x == 66 || y == 66 || z == 66) continue;
-                Debug.LogFormat("!({0},{1},{2}):{3}",x,y,z,buf[i]);
-            }
-        }
+        resuBuffer.GetData(buf);
+        SimpleGUI.creeperCount = buf[0];
     }
 
     void DoFlowGPU()
     {
         fluidSimShader.Dispatch(kernelMain, width / 8, height / 8, depth / 16);
-
         fluidSimShader.Dispatch(kernelX, height / 8, depth / 8, 1);
         fluidSimShader.Dispatch(kernelY, width / 8, depth / 8, 1);
         fluidSimShader.Dispatch(kernelZ, width / 8, height / 8, 1);
@@ -125,8 +106,19 @@ public class FluidSimController
     public void FixedUpdate()
     {
         DoFlowGPU();
-        //dataBuffer.GetData(simulator.data);
-        GetValue();
+        dataBuffer.GetData(simulator.data);
+        //if (checkDataIsZero()) Debug.LogError("!");
+        //GetValue();
+    }
+
+    [System.Obsolete]
+    public bool checkDataIsZero()
+    {
+        foreach(var i in simulator.data)
+        {
+            if (i != 0) return false;
+        }
+        return true;
     }
 
     public void OnDestroy()

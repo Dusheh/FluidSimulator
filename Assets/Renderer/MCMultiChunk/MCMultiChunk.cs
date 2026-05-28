@@ -17,16 +17,35 @@ public partial class MCMultiChunk : MonoBehaviour
 
     public int startX, startY, startZ;
 
+    public ComputeShader MCShader;
+    public ComputeBuffer indices;
+    public ComputeBuffer indexCounter;
+    public ComputeBuffer priv;
+    [HideInInspector]
+    public int kernelMain;
+
+    int[] counterZero = { 0 };
+
     public void Initialize()
     {
-        /*simulator = new FluidSimulator(chunkSize, chunkSize, chunkSize);
-        simulator.CreateData();
-        simulator.data[simulator.GetIndex(3, 4, 4)] = 5000;*/
         mesh = new Mesh();
         meshFilter = GetComponent<MeshFilter>();
         meshRenderer = GetComponent<MeshRenderer>();
         meshFilter.mesh = mesh;
         CreateVertices();
+        kernelMain = MCShader.FindKernel("CSMain");
+        BindBuffer();
+    }
+
+    public void BindBuffer()
+    { 
+        priv = new ComputeBuffer(3, sizeof(int));
+        priv.SetData(new int[] { startX, startY, startZ });
+        MCShader.SetBuffer(kernelMain, "priv", priv);
+        indexCounter = new ComputeBuffer(1, sizeof(int));
+        MCShader.SetBuffer(kernelMain, "IndexCounter", indexCounter);
+        indices = new ComputeBuffer(50625, sizeof(int));
+        MCShader.SetBuffer(kernelMain, "Indices", indices);
     }
 
     public void CreateVertices()
@@ -59,8 +78,6 @@ public partial class MCMultiChunk : MonoBehaviour
 
     public void RefreshIndices()
     {
-        //triangles.Clear();
-        
         int cursor = 0;
         int arrayCount = triangles.Count;
         int sizex = chunkSize;
@@ -147,9 +164,29 @@ public partial class MCMultiChunk : MonoBehaviour
         mesh.RecalculateNormals();       // 可选
     }
 
+    public void RefreshIndicesGPU()
+    {
+        MCShader.Dispatch(kernelMain, 16 / 8, 16 / 8, 16 / 8);
+        indexCounter.SetData(counterZero);
+    }
+
+    int[] buf = new int[50625];
+    int[] counter = new int[1];
+    public void GetIndicesAndRender()
+    {
+        //indices.GetData(mesh.triangles);
+        indices.GetData(buf);
+        indexCounter.GetData(counter);
+        //if (buf[0] != -1) Debug.Log("!");
+        //mesh.triangles = buf;
+        mesh.SetTriangles(buf, counter[0]);
+    }
+
     public void myUpdate()
     {
         //RefreshIndices();
+        RefreshIndicesGPU();
+        GetIndicesAndRender();
     }
 
     // 这里有强耦合代码

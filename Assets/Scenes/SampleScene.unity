@@ -244,16 +244,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   chunks: []
   material: {fileID: 10303, guid: 0000000000000000f000000000000000, type: 0}
-  chunkCountOfX: 32
-  chunkCountOfY: 16
-  chunkCountOfZ: 32
+  chunkCountOfX: 8
+  chunkCountOfY: 8
+  chunkCountOfZ: 8
   mapSizeX: 0
   mapSizeY: 0
   mapSizeZ: 0
   chunkSize: 16
-  isoLevel: 300
+  isoLevel: 0
   waterCoord: {x: 16, y: 16, z: 16}
   fluidSimShader: {fileID: 7200000, guid: 22daf086b475744f4aa8ab716ae1606a, type: 3}
+  MCShader: {fileID: 7200000, guid: 7fedb1b6238e341208d4531db8d3e46e, type: 3}
 --- !u!4 &742026090
 Transform:
   m_ObjectHideFlags: 0
@@ -284,7 +285,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &951886251
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -32,6 +32,8 @@ public class MCMultiChunkManager : MonoBehaviour
     public FluidSimulator simulator;
     public FluidSimController simController;
     public ComputeShader fluidSimShader;
+    public ComputeShader MCShader;
+    public ComputeBuffer prop;
     
     public void Initialize()
     {
@@ -42,7 +44,18 @@ public class MCMultiChunkManager : MonoBehaviour
         simController = new FluidSimController();
         simController.simulator = simulator;
         simulator.CreateData();
+        prop = new ComputeBuffer(16, sizeof(int));
         //simulator.data[simulator.GetIndex(mapSizeX / 2, mapSizeY / 2, mapSizeZ / 2)] = 5000;
+        prop.SetData(new int[] { 0, 0, 0, 0, isoLevel, 0, 0,
+            (simulator.depth + 2) * (simulator.height + 2),
+            (simulator.depth + 2) * (simulator.height + 2) + (simulator.depth+2),
+            (simulator.depth + 2),
+            1 + (simulator.depth + 2) * (simulator.height + 2),
+            1 + (simulator.depth + 2) * (simulator.height + 2) + (simulator.depth + 2),
+            1 + (simulator.depth + 2),
+            (16 - 1) * 16 * 16,
+            16 * (16 - 1) * 16
+        });
 
         for (int i = 0; i < 100; i++)
         {
@@ -73,7 +86,12 @@ public class MCMultiChunkManager : MonoBehaviour
                     mc.startY = y * (chunkSize - 1);
                     mc.startZ = z * (chunkSize - 1);
                     mc.isoLevel = isoLevel;
+                    mc.MCShader = MCShader;
                     mc.Initialize();
+                    mc.MCShader.SetBuffer(mc.kernelMain, "DataBuffer", simController.dataBuffer);
+                    mc.MCShader.SetBuffer(mc.kernelMain, "prop", prop);
+
+                    chunks.Add(mc);
                 }
     }
 

@@ -10,39 +10,33 @@ RWStructuredBuffer<int> data;
 RWStructuredBuffer<int> next;
 RWStructuredBuffer<int> resu;
 
-/*int strideZ, strideY, strideX;
-
-[numthreads(1,1,1)]
-void Init (uint3 id : SV_DispatchThreadID)
-{
-    strideZ = 1;                          
-    strideY = prop[5] * strideZ;            
-    strideX = prop[4] * strideY;     
-}*/
-
 [numthreads(8,8,16)]
 void BoundFlow (uint3 id : SV_DispatchThreadID)
 {
     int x = id.x + 1;
     int y = id.y + 1;
     int z = id.z + 1;
+    int StrideY = prop[7];
+    int StrideX = prop[8];
        
-    int index = x * prop[8] + y * prop[7] + z;
+    int index = x * StrideX + y * StrideY + z;
 
     int center = data[index];
-    int val = center - (center / 7) * 6;
-    //InterlockedAdd(resu[0],prop[0]);
-    //InterlockedAdd(resu[1],prop[1]);
-    //InterlockedAdd(resu[2],prop[2]);
-    //InterlockedAdd(resu[3],val);
-    //resu[0] = strideZ;
 
-    val += data[index + prop[8]] / 7;    // x+1
-    val += data[index - prop[8]] / 7;    // x-1
-    val += data[index + prop[7]] / 7;    // y+1
-    val += data[index - prop[7]] / 7;    // y-1
-    val += data[index + 1] / 7;    // z+1
-    val += data[index - 1] / 7;    // z-1
+    int val = center - int(center * 0.142857) * 6;
+
+    /*val += data[index + StrideX] * 0.142857;    // x+1
+    val += data[index - StrideX] * 0.142857;    // x-1
+    val += data[index + prop[7]] * 0.142857;    // y+1
+    val += data[index - prop[7]] * 0.142857;    // y-1
+    val += data[index + 1] * 0.142857;    // z+1
+    val += data[index - 1] * 0.142857;    // z-1*/
+    val += (data[index + StrideX] 
+     + data[index - StrideX]
+     + data[index + prop[7]]    // y+1
+     + data[index - prop[7]]    // y-1
+     + data[index + 1]    // z+1
+     + data[index - 1]) * 0.142857;    // z-1
 
     next[index] = val;
 }
