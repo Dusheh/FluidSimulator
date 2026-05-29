@@ -1,7 +1,9 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using Unity.Collections;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
 public partial class MCMultiChunk : MonoBehaviour
@@ -33,8 +35,14 @@ public partial class MCMultiChunk : MonoBehaviour
         meshRenderer = GetComponent<MeshRenderer>();
         meshFilter.mesh = mesh;
         CreateVertices();
+        MCShader = Instantiate(Resources.Load<ComputeShader>("Renderer/MCMultiChunk/MCShader"));
+        if (MCShader == null) Debug.LogError("Shader not found");
         kernelMain = MCShader.FindKernel("CSMain");
+        meshRenderer.material = Resources.Load<Material>("Materials/Blue");
         BindBuffer();
+
+        mesh.SetIndexBufferParams(50625, IndexFormat.UInt32);
+        //natBuf = new NativeArray<int>(50625, Allocator.TempJob);
     }
 
     public void BindBuffer()
@@ -166,30 +174,120 @@ public partial class MCMultiChunk : MonoBehaviour
 
     public void RefreshIndicesGPU()
     {
-        MCShader.Dispatch(kernelMain, 16 / 8, 16 / 8, 16 / 8);
         indexCounter.SetData(counterZero);
+        MCShader.Dispatch(kernelMain, 16 / 8, 16 / 8, 16 / 8);
     }
 
     int[] buf = new int[50625];
     int[] counter = new int[1];
+    public bool logCounter = false;
+    public bool updateDone = true;
+    private IEnumerator ReadTwoBuffersOld()
+    {
+        AsyncGPUReadbackRequest request1 = AsyncGPUReadback.Request(indices);
+        AsyncGPUReadbackRequest request2 = AsyncGPUReadback.Request(indexCounter);
+
+        yield return new WaitUntil(() => request1.done && request2.done);
+
+        if (!request1.hasError && !request2.hasError)
+        {
+            NativeArray<int> indi = request1.GetData<int>();
+            NativeArray<int> coun = request2.GetData<int>();
+
+            mesh.SetIndexBufferData(indi, 0, 0, coun[0]);
+
+            mesh.SetSubMesh(0, new SubMeshDescriptor
+            {
+                indexStart = 0,
+                indexCount = coun[0],
+                topology = MeshTopology.Triangles,
+                baseVertex = 0
+            }, MeshUpdateFlags.DontRecalculateBounds | MeshUpdateFlags.DontValidateIndices);
+
+            //mesh.UploadMeshData(false);
+            mesh.RecalculateNormals();
+        }
+        else
+        {
+            Debug.LogError("GPU readback error occurred");
+        }
+        updateDone = true;
+    }
+
+    public AsyncGPUReadbackRequest r1, r2;
+    public bool isPending = false;
+
+    public void WaitForRequest()
+    {
+        if (isPending) return;
+        r1 = AsyncGPUReadback.Request(indices);
+        r2 = AsyncGPUReadback.Request(indexCounter);
+        isPending = true;
+    }
+
+    public void WaitForUpdate()
+    {
+        if (!r1.done || !r2.done) return;
+        if (!r1.hasError && !r2.hasError)
+        {
+            NativeArray<int> indi = r1.GetData<int>();
+            NativeArray<int> coun = r2.GetData<int>();
+
+            mesh.SetIndexBufferData(indi, 0, 0, coun[0]);
+
+            mesh.SetSubMesh(0, new SubMeshDescriptor
+            {
+                indexStart = 0,
+                indexCount = coun[0],
+                topology = MeshTopology.Triangles,
+                baseVertex = 0
+            }, MeshUpdateFlags.DontRecalculateBounds | MeshUpdateFlags.DontValidateIndices);
+
+            //mesh.UploadMeshData(false);
+            mesh.RecalculateNormals();
+            //Debug.Log("Updated");
+        }
+        else
+        {
+            Debug.LogError("GPU readback error occurred");
+        }
+        updateDone = true;
+    }
+
+    public void AsyncGetIndicesAndRender()
+    {
+        //if(updateDone) StartCoroutine(ReadTwoBuffersOld());
+    }
+
     public void GetIndicesAndRender()
     {
         //indices.GetData(mesh.triangles);
         indices.GetData(buf);
         indexCounter.GetData(counter);
+        if (logCounter)
+        {
+            Debug.Log(counter[0]);
+            string tmp = "";
+            for (int i = 0; i < counter[0]; i++)
+            { tmp += buf[i].ToString() + ","; }
+            Debug.Log(tmp);
+        }
         //if (buf[0] != -1) Debug.Log("!");
         //mesh.triangles = buf;
-        mesh.SetTriangles(buf, counter[0]);
+        mesh.SetTriangles(buf, 0, counter[0], 0);
+        //else
+        mesh.RecalculateNormals();
     }
 
     public void myUpdate()
     {
         //RefreshIndices();
         RefreshIndicesGPU();
-        GetIndicesAndRender();
+        AsyncGetIndicesAndRender();
     }
 
-    // 这里有强耦合代码
+    public bool needsUpdate;
+
 
     public FluidSimulator simulator;
 
@@ -228,9 +326,9 @@ public partial class MCMultiChunk : MonoBehaviour
     int YEdgeIndex(int x, int y, int z) => cX + z * (chunkSize * (chunkSize - 1)) + y * chunkSize + x;
     int ZEdgeIndex(int x, int y, int z) => cX + cY + z * (chunkSize * chunkSize) + y * chunkSize + x;
 
-    public bool renderEdge = false;
+    public bool renderEdge = true;
 
-    public void disableOnDrawGizmosSelected()
+    public void OnDrawGizmosSelected()
     {
         if (!renderEdge) return;
         Gizmos.DrawWireCube(Vector3.one * 8 + transform.position, Vector3.one * 15);   

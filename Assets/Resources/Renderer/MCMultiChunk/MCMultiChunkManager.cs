@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 public class MCMultiChunkManager : MonoBehaviour
 {
@@ -54,11 +55,15 @@ public class MCMultiChunkManager : MonoBehaviour
             1 + (simulator.depth + 2) * (simulator.height + 2) + (simulator.depth + 2),
             1 + (simulator.depth + 2),
             (16 - 1) * 16 * 16,
-            16 * (16 - 1) * 16
+            16 * (16 - 1) * 16,
+            16 * 16 * (16 - 1)
         });
+
+        simulator.data[simulator.GetIndex(1, 1, 1)] = 50_000000;
 
         for (int i = 0; i < 100; i++)
         {
+            break;
             simulator.data[Random.Range(0, simulator.data.Length)] = Random.Range(50000,100000);
         }
 
@@ -98,6 +103,7 @@ public class MCMultiChunkManager : MonoBehaviour
     public void Awake()
     {
         Initialize();
+        StartCoroutine(UpdateAllChunks());
     }
 
     public void FixedUpdate()
@@ -117,5 +123,33 @@ public class MCMultiChunkManager : MonoBehaviour
     public void OnDestroy()
     {
         simController.OnDestroy();
+    }
+
+    private IEnumerator UpdateAllChunks()
+    {
+        while (true)
+        {
+            // 遍历所有区块
+            for (int i = 0; i < chunks.Count; i++)
+            {
+                var chunk = chunks[i];
+                // 如果区块需要更新且没有待处理请求
+                if (chunk.updateDone)
+                {
+                    chunk.updateDone = false;
+                    chunk.isPending = false;
+                    chunk.WaitForRequest();
+                }
+
+                // 如果有请求正在处理
+                if (chunk.isPending)
+                {
+                    chunk.WaitForUpdate();
+                }
+            }
+
+            // 每帧只执行一次检查
+            yield return null;
+        }
     }
 }

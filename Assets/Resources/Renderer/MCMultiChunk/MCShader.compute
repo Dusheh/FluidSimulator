@@ -306,7 +306,7 @@ void CSMain(uint3 id : SV_DispatchThreadID)
     if (vx >= 16 - 1 || vy >= 16 - 1 || vz >= 16 - 1)
         return;
 
-    int nx = vx + priv[1], ny = vy + priv[2], nz = vz + priv[3]; 
+    int nx = vx + priv[0], ny = vy + priv[1], nz = vz + priv[2]; 
     int cubeIndex = 0;
     int baseIndex = (nx + 1) * prop[7] + (ny + 1) * prop[9] + (nz + 1);
     cubeIndex |= DataBuffer[baseIndex] > prop[4] ? 1 : 0;
@@ -325,7 +325,7 @@ void CSMain(uint3 id : SV_DispatchThreadID)
     int triCount = TriCountTable[cubeIndex];
 
     uint destBase;
-    InterlockedAdd(IndexCounter[0], (uint)(triCount * 3), destBase);
+    InterlockedAdd(IndexCounter[0], (uint)(triCount), destBase);
 
     int writeIdx = (int)destBase;
     for (int i = 0; i < triCount; i += 3)
@@ -336,34 +336,34 @@ void CSMain(uint3 id : SV_DispatchThreadID)
         int e2 = TriTable[baseEntry + i + 2];
 
         //Indices[writeIdx++] = GetVertexIndex(vx, vy, vz, e0);
-        int gx = vx + edgeInfo[4*e0];
-        int gy = vy + edgeInfo[4*e0+1];
-        int gz = vz + edgeInfo[4*e0+2];
-        if (edgeInfo[4*e0+3] == 0)
+        int gx = vx + edgeInfo[4*e0+1];
+        int gy = vy + edgeInfo[4*e0+2];
+        int gz = vz + edgeInfo[4*e0+3];
+        if (edgeInfo[4*e0] == 0)
             Indices[writeIdx++] = gz * (16 * (16 - 1)) + gy * (16 - 1) + gx;
-        else if (edgeInfo[4*e0+3] == 1)
+        else if (edgeInfo[4*e0] == 1)
             Indices[writeIdx++] = prop[13] + gz * (16 * (16 - 1)) + gy * 16 + gx;
         else
             Indices[writeIdx++] = prop[13] + prop[14] + gz * (16 * 16) + gy * 16 + gx;
 
         //Indices[writeIdx++] = GetVertexIndex(vx, vy, vz, e2);
-        gx = vx + edgeInfo[4*e2];
-        gy = vy + edgeInfo[4*e2+1];
-        gz = vz + edgeInfo[4*e2+2];
-        if (edgeInfo[4*e2+3] == 0)
+        gx = vx + edgeInfo[4*e2+1];
+        gy = vy + edgeInfo[4*e2+2];
+        gz = vz + edgeInfo[4*e2+3];
+        if (edgeInfo[4*e2] == 0)
             Indices[writeIdx++] = gz * (16 * (16 - 1)) + gy * (16 - 1) + gx;
-        else if (edgeInfo[4*e2+3] == 1)
+        else if (edgeInfo[4*e2] == 1)
             Indices[writeIdx++] = prop[13] + gz * (16 * (16 - 1)) + gy * 16 + gx;
         else
             Indices[writeIdx++] = prop[13] + prop[14] + gz * (16 * 16) + gy * 16 + gx;
 
         //Indices[writeIdx++] = GetVertexIndex(vx, vy, vz, e1);
-        gx = vx + edgeInfo[4*e1];
-        gy = vy + edgeInfo[4*e1+1];
-        gz = vz + edgeInfo[4*e1+2];
-        if (edgeInfo[4*e1+3] == 0)
+        gx = vx + edgeInfo[4*e1+1];
+        gy = vy + edgeInfo[4*e1+2];
+        gz = vz + edgeInfo[4*e1+3];
+        if (edgeInfo[4*e1] == 0)
             Indices[writeIdx++] = gz * (16 * (16 - 1)) + gy * (16 - 1) + gx;
-        else if (edgeInfo[4*e1+3] == 1)
+        else if (edgeInfo[4*e1] == 1)
             Indices[writeIdx++] = prop[13] + gz * (16 * (16 - 1)) + gy * 16 + gx;
         else
             Indices[writeIdx++] = prop[13] + prop[14] + gz * (16 * 16) + gy * 16 + gx;
