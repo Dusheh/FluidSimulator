@@ -277,16 +277,13 @@ static const int edgeInfo[48] =
 static const int TriCountTable[256] = 
 { 0, 3, 3, 6, 3, 6, 6, 9, 3, 6, 6, 9, 6, 9, 9, 6, 3, 6, 6, 9, 6, 9, 9, 12, 6, 9, 9, 12, 9, 12, 12, 9, 3, 6, 6, 9, 6, 9, 9, 12, 6, 9, 9, 12, 9, 12, 12, 9, 6, 9, 9, 6, 9, 12, 12, 9, 9, 12, 12, 9, 12, 15, 15, 6, 3, 6, 6, 9, 6, 9, 9, 12, 6, 9, 9, 12, 9, 12, 12, 9, 6, 9, 9, 12, 9, 12, 12, 15, 9, 12, 12, 15, 12, 15, 15, 12, 6, 9, 9, 12, 9, 12, 6, 9, 9, 12, 12, 15, 12, 15, 9, 6, 9, 12, 12, 9, 12, 15, 9, 6, 12, 15, 15, 12, 15, 6, 12, 3, 3, 6, 6, 9, 6, 9, 9, 12, 6, 9, 9, 12, 9, 12, 12, 9, 6, 9, 9, 12, 9, 12, 12, 15, 9, 6, 12, 9, 12, 9, 15, 6, 6, 9, 9, 12, 9, 12, 12, 15, 9, 12, 12, 15, 12, 15, 15, 12, 9, 12, 12, 9, 12, 15, 15, 12, 12, 9, 15, 6, 15, 12, 6, 3, 6, 9, 9, 12, 9, 12, 12, 15, 9, 12, 12, 15, 6, 9, 9, 6, 9, 12, 12, 15, 12, 15, 15, 6, 12, 9, 15, 12, 9, 6, 12, 3, 9, 12, 12, 15, 12, 15, 9, 12, 12, 15, 15, 6, 9, 12, 6, 3, 6, 9, 9, 6, 9, 12, 6, 3, 9, 6, 12, 3, 6, 3, 3, 0 };
 
-// Creeper
 StructuredBuffer<int> DataBuffer;
-// Mesh.Triangles
 RWStructuredBuffer<uint> Indices;
-// IndexCounter
-RWStructuredBuffer<uint> IndexCounter;  // Only [0]
+RWStructuredBuffer<uint> IndexCounter;
 
 StructuredBuffer<int> prop;
-// [0]Null
-// [1]Null, [2]Null, [3]Null, [4]isoLevel, [5]Null, [6]Null,
+// [0]  Null
+// [1]  Null, [2]Null, [3]Null, [4]isoLevel, [5]Null, [6]Null,
 // [7]  (simulator.depth + 2) * (simulator.height + 2)
 // [8]  (simulator.depth + 2) * (simulator.height + 2) + (simulator.depth + 2)
 // [9]  (simulator.depth + 2)
@@ -318,8 +315,7 @@ void CSMain(uint3 id : SV_DispatchThreadID)
     cubeIndex |= DataBuffer[baseIndex + prop[11]] > prop[4] ? 64 : 0;
     cubeIndex |= DataBuffer[baseIndex + prop[12]] > prop[4] ? 128 : 0;
 
-    if (cubeIndex == 0 || cubeIndex == 255)
-        return;
+    if (cubeIndex == 0 || cubeIndex == 255) return;
 
     int baseEntry = cubeIndex * 16;
     int triCount = TriCountTable[cubeIndex];
@@ -335,7 +331,6 @@ void CSMain(uint3 id : SV_DispatchThreadID)
         int e1 = TriTable[baseEntry + i + 1];
         int e2 = TriTable[baseEntry + i + 2];
 
-        //Indices[writeIdx++] = GetVertexIndex(vx, vy, vz, e0);
         int gx = vx + edgeInfo[4*e0+1];
         int gy = vy + edgeInfo[4*e0+2];
         int gz = vz + edgeInfo[4*e0+3];
@@ -346,7 +341,6 @@ void CSMain(uint3 id : SV_DispatchThreadID)
         else
             Indices[writeIdx++] = prop[13] + prop[14] + gz * (16 * 16) + gy * 16 + gx;
 
-        //Indices[writeIdx++] = GetVertexIndex(vx, vy, vz, e2);
         gx = vx + edgeInfo[4*e2+1];
         gy = vy + edgeInfo[4*e2+2];
         gz = vz + edgeInfo[4*e2+3];
@@ -357,7 +351,6 @@ void CSMain(uint3 id : SV_DispatchThreadID)
         else
             Indices[writeIdx++] = prop[13] + prop[14] + gz * (16 * 16) + gy * 16 + gx;
 
-        //Indices[writeIdx++] = GetVertexIndex(vx, vy, vz, e1);
         gx = vx + edgeInfo[4*e1+1];
         gy = vy + edgeInfo[4*e1+2];
         gz = vz + edgeInfo[4*e1+3];

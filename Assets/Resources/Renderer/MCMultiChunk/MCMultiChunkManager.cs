@@ -5,8 +5,8 @@ using UnityEngine.Rendering;
 
 public class MCMultiChunkManager : MonoBehaviour
 {
+    [HideInInspector]
     public List<MCMultiChunk> chunks;
-    public Material material;
 
     [Min(1)]
     public int chunkCountOfX;
@@ -24,17 +24,13 @@ public class MCMultiChunkManager : MonoBehaviour
 
     [Min(1)]
     public int chunkSize = 16;
-
     public int isoLevel = 50000;
-
-    [Header("Water Coord")]
-    public Vector3Int waterCoord;
 
     public FluidSimulator simulator;
     public FluidSimController simController;
-    public ComputeShader fluidSimShader;
-    public ComputeShader MCShader;
-    public ComputeBuffer prop;
+    [SerializeField]
+    private ComputeShader fluidSimShader;
+    private ComputeBuffer prop;
     
     public void Initialize()
     {
@@ -46,7 +42,6 @@ public class MCMultiChunkManager : MonoBehaviour
         simController.simulator = simulator;
         simulator.CreateData();
         prop = new ComputeBuffer(16, sizeof(int));
-        //simulator.data[simulator.GetIndex(mapSizeX / 2, mapSizeY / 2, mapSizeZ / 2)] = 5000;
         prop.SetData(new int[] { 0, 0, 0, 0, isoLevel, 0, 0,
             (simulator.depth + 2) * (simulator.height + 2),
             (simulator.depth + 2) * (simulator.height + 2) + (simulator.depth+2),
@@ -59,11 +54,11 @@ public class MCMultiChunkManager : MonoBehaviour
             16 * 16 * (16 - 1)
         });
 
-        simulator.data[simulator.GetIndex(1, 1, 1)] = 50_000000;
+        //simulator.data[simulator.GetIndex(1, 1, 1)] = 50_000000;
 
-        for (int i = 0; i < 100; i++)
+        for (int i = 0; i < 10; i++)
         {
-            break;
+            //break;
             simulator.data[Random.Range(0, simulator.data.Length)] = Random.Range(50000,100000);
         }
 
@@ -73,7 +68,6 @@ public class MCMultiChunkManager : MonoBehaviour
         simController.depth = mapSizeZ;
         simController.Awake();
         simController.CreateData(mapSizeX, mapSizeY, mapSizeZ);
-        //simulator.data[simulator.GetIndex(waterCoord.x, waterCoord.y, waterCoord.z)] = 100000;
         for (int x = 0; x < chunkCountOfX; x++)
         for (int y = 0; y < chunkCountOfY; y++)
         for (int z = 0; z < chunkCountOfZ; z++)
@@ -82,17 +76,11 @@ public class MCMultiChunkManager : MonoBehaviour
                     var mc = chunk.AddComponent(typeof(MCMultiChunk)) as MCMultiChunk;
                     chunk.transform.parent = transform;
                     
-                    // TODO
                     mc.chunkSize = chunkSize;
-                    mc.GetComponent<MeshRenderer>().material = material;
                     mc.transform.position = new Vector3(x, y, z) * (chunkSize - 1);
                     mc.simulator = simulator;
-                    mc.startX = x * (chunkSize - 1);
-                    mc.startY = y * (chunkSize - 1);
-                    mc.startZ = z * (chunkSize - 1);
                     mc.isoLevel = isoLevel;
-                    mc.MCShader = MCShader;
-                    mc.Initialize();
+                    mc.Initialize(x * (chunkSize - 1), y * (chunkSize - 1), z * (chunkSize - 1));
                     mc.MCShader.SetBuffer(mc.kernelMain, "DataBuffer", simController.dataBuffer);
                     mc.MCShader.SetBuffer(mc.kernelMain, "prop", prop);
 
@@ -108,7 +96,6 @@ public class MCMultiChunkManager : MonoBehaviour
 
     public void FixedUpdate()
     {
-        //simulator.DoFlow();
         simController.FixedUpdate();
     }
 
@@ -122,18 +109,17 @@ public class MCMultiChunkManager : MonoBehaviour
 
     public void OnDestroy()
     {
-        simController.OnDestroy();
+        simController.Dispose();
+        prop.Dispose();
     }
 
     private IEnumerator UpdateAllChunks()
     {
         while (true)
         {
-            // 遍历所有区块
             for (int i = 0; i < chunks.Count; i++)
             {
                 var chunk = chunks[i];
-                // 如果区块需要更新且没有待处理请求
                 if (chunk.updateDone)
                 {
                     chunk.updateDone = false;
@@ -141,14 +127,12 @@ public class MCMultiChunkManager : MonoBehaviour
                     chunk.WaitForRequest();
                 }
 
-                // 如果有请求正在处理
                 if (chunk.isPending)
                 {
                     chunk.WaitForUpdate();
                 }
             }
 
-            // 每帧只执行一次检查
             yield return null;
         }
     }

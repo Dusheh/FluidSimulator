@@ -25,18 +25,12 @@ void BoundFlow (uint3 id : SV_DispatchThreadID)
 
     int val = center - int(center * 0.142857) * 6;
 
-    /*val += data[index + StrideX] * 0.142857;    // x+1
-    val += data[index - StrideX] * 0.142857;    // x-1
-    val += data[index + prop[7]] * 0.142857;    // y+1
-    val += data[index - prop[7]] * 0.142857;    // y-1
-    val += data[index + 1] * 0.142857;    // z+1
-    val += data[index - 1] * 0.142857;    // z-1*/
-    val += (data[index + StrideX] 
-     + data[index - StrideX]
-     + data[index + prop[7]]    // y+1
-     + data[index - prop[7]]    // y-1
-     + data[index + 1]    // z+1
-     + data[index - 1]) * 0.142857;    // z-1
+    val += (data[index + StrideX]       // x+1
+     + data[index - StrideX]            // x-1
+     + data[index + prop[7]]            // y+1
+     + data[index - prop[7]]            // y-1
+     + data[index + 1]                  // z+1
+     + data[index - 1]) * 0.142857;     // z-1
 
     next[index] = val;
 }
@@ -46,12 +40,13 @@ void EdgeFlow_X (uint2 id : SV_DispatchThreadID)
 {
     int y = id.x + 1;
     int z = id.y + 1;
+    int prop8 = prop[8];
+    int prop7 = prop[7];
+    int index_x0 = y * prop7 + z;
+    int index_xMax = (prop[0] + 1) * prop8 + y * prop7 + z;
 
-    int index_x0 = y * prop[7] + z;
-    next[index_x0 + prop[8]] += data[index_x0] / 7;
-
-    int index_xMax = (prop[0]+1) * prop[8] + y * prop[7] + z;
-    next[index_xMax - prop[8]] += data[index_xMax] / 7;
+    next[index_x0 + prop8] += data[index_x0] * 0.142857;
+    next[index_xMax - prop8] += data[index_xMax] * 0.142857;
 }
 
 [numthreads(8,8,1)]
@@ -59,12 +54,13 @@ void EdgeFlow_Y (uint2 id : SV_DispatchThreadID)
 {
     int x = id.x + 1;
     int z = id.y + 1;
+    int prop8 = prop[8];
+    int prop7 = prop[7];
+    int index_y0 = x * prop8 + z;
+    int index_yMax = x * prop8 + (prop[1]+1) * prop7 + z;
 
-    int index_y0 = x * prop[8] + z;
-    next[index_y0 + prop[7]] += data[index_y0] / 7;
-
-    int index_yMax = x * prop[8] + (prop[1]+1) * prop[7] + z;
-    next[index_yMax - prop[7]] += data[index_yMax] / 7;
+    next[index_y0 + prop7] += data[index_y0] * 0.142857;
+    next[index_yMax - prop7] += data[index_yMax] * 0.142857;
 }
 
 [numthreads(8,8,1)]
@@ -72,10 +68,11 @@ void EdgeFlow_Z (uint2 id : SV_DispatchThreadID)
 {
     int x = id.x + 1;
     int y = id.y + 1;
+    int prop8 = prop[8];
+    int prop7 = prop[7];
+    int index_z0 = x * prop8 + y * prop7;
+    int index_zMax = x * prop8 + y * prop7 + prop[2] + 1;
 
-    int index_z0 = x * prop[8] + y * prop[7];
-    next[index_z0 + 1] += data[index_z0] / 7;
-
-    int index_zMax = x * prop[8] + y * prop[7] + prop[2] + 1;
-    next[index_zMax - 1] += data[index_zMax] / 7;
+    next[index_z0 + 1] += data[index_z0] * 0.142857;
+    next[index_zMax - 1] += data[index_zMax] * 0.142857;
 }

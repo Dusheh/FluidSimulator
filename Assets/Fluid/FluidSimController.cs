@@ -1,28 +1,24 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using System;
 using UnityEngine;
-using UnityEngine.Profiling;
 
-public class FluidSimController
+public class FluidSimController : IDisposable
 {
     public int width, height, depth;
 
+    public FluidSimulator simulator;
     public ComputeShader fluidSimShader;
     public ComputeBuffer dataBuffer;
     public ComputeBuffer nextBuffer;
     public ComputeBuffer resuBuffer;
     public ComputeBuffer propBuffer;
-    public int kernelInit;
-    [HideInInspector]
     public int kernelMain;
-    [HideInInspector]
     public int kernelX;
-    [HideInInspector]
     public int kernelY;
-    [HideInInspector]
     public int kernelZ;
 
-    public FluidSimulator simulator;
+    private bool disposed = false;
 
     public void Awake()
     {
@@ -53,43 +49,29 @@ public class FluidSimController
     public void BindBuffers()
     {
         fluidSimShader.SetBuffer(kernelMain, "data", dataBuffer);
-        fluidSimShader.SetBuffer(kernelMain, "next", nextBuffer);
-
         fluidSimShader.SetBuffer(kernelX, "data", dataBuffer);
-        fluidSimShader.SetBuffer(kernelX, "next", nextBuffer);
-
         fluidSimShader.SetBuffer(kernelY, "data", dataBuffer);
-        fluidSimShader.SetBuffer(kernelY, "next", nextBuffer);
-
         fluidSimShader.SetBuffer(kernelZ, "data", dataBuffer);
+
+        fluidSimShader.SetBuffer(kernelMain, "next", nextBuffer);
+        fluidSimShader.SetBuffer(kernelX, "next", nextBuffer);
+        fluidSimShader.SetBuffer(kernelY, "next", nextBuffer);
         fluidSimShader.SetBuffer(kernelZ, "next", nextBuffer);
     }
 
     public void SetValues()
     {
         int[] prop = new int[9]
-            { width, height, depth, width + 2, height + 2, depth + 2,
-            1, depth+2, (depth+2)*(height+2) };
+            { width, height, depth, width + 2, height + 2, depth + 2, 1, depth+2, (depth+2)*(height+2) };
         propBuffer = new ComputeBuffer(9, sizeof(int));
+        resuBuffer = new ComputeBuffer(simulator.data.Length, sizeof(int));
         propBuffer.SetData(prop);
+
         fluidSimShader.SetBuffer(kernelMain, "prop", propBuffer);
         fluidSimShader.SetBuffer(kernelX, "prop", propBuffer);
         fluidSimShader.SetBuffer(kernelY, "prop", propBuffer);
         fluidSimShader.SetBuffer(kernelZ, "prop", propBuffer);
-
-        fluidSimShader.SetBuffer(kernelMain, "prop", propBuffer);
-        resuBuffer = new ComputeBuffer(simulator.data.Length, sizeof(int));
         fluidSimShader.SetBuffer(kernelMain, "resu", resuBuffer);
-        //buf = new int[simulator.data.Length];
-    }
-
-    [System.Obsolete]
-    int[] buf;
-    [System.Obsolete]
-    public void GetValue()
-    {
-        resuBuffer.GetData(buf);
-        SimpleGUI.creeperCount = buf[0];
     }
 
     void DoFlowGPU()
@@ -106,24 +88,21 @@ public class FluidSimController
     public void FixedUpdate()
     {
         DoFlowGPU();
-        //dataBuffer.GetData(simulator.data);
-        //if (checkDataIsZero()) Debug.LogError("!");
-        //GetValue();
     }
 
-    [System.Obsolete]
-    public bool checkDataIsZero()
+    public void Dispose()
     {
-        foreach(var i in simulator.data)
-        {
-            if (i != 0) return false;
-        }
-        return true;
+        Dispose(true);
+        GC.SuppressFinalize(this);
     }
 
-    public void OnDestroy()
+    protected virtual void Dispose(bool disposing)
     {
-        dataBuffer.Release();
-        nextBuffer.Release();
+        if (disposed) return;
+        dataBuffer?.Dispose();
+        nextBuffer?.Dispose();
+        propBuffer?.Dispose();
+        resuBuffer?.Dispose();
+        disposed = true;
     }
 }
