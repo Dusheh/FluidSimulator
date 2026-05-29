@@ -106,7 +106,7 @@ public class FluidSimController
     public void FixedUpdate()
     {
         DoFlowGPU();
-        dataBuffer.GetData(simulator.data);
+        //dataBuffer.GetData(simulator.data);
         //if (checkDataIsZero()) Debug.LogError("!");
         //GetValue();
     }
