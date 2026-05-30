@@ -31,9 +31,10 @@ public partial class MCMultiChunk : MonoBehaviour
     private ComputeBuffer indexCounter;
     [HideInInspector]
     public int kernelMain;
+    [HideInInspector]
+    public Material material;
 
     private AsyncGPUReadbackRequest r1, r2;
-    public FluidSimulator simulator;
     [HideInInspector]
     public bool isPending = false, updateDone = true;
     private readonly int[] counterZero = { 0 };
@@ -55,7 +56,7 @@ public partial class MCMultiChunk : MonoBehaviour
         MCShader = Instantiate(Resources.Load<ComputeShader>("Renderer/MCMultiChunk/MCShader"));
         if (MCShader == null) Debug.LogError("Shader not found");
         kernelMain = MCShader.FindKernel("CSMain");
-        meshRenderer.material = Resources.Load<Material>("Materials/Blue");
+        meshRenderer.material = material;//Resources.Load<Material>("Materials/Blue");
         BindBuffer();
 
         mesh.SetIndexBufferParams(50625, IndexFormat.UInt32);
@@ -70,6 +71,8 @@ public partial class MCMultiChunk : MonoBehaviour
         MCShader.SetBuffer(kernelMain, "IndexCounter", indexCounter);
         MCShader.SetBuffer(kernelMain, "Indices", indices);
         MCShader.SetBuffer(kernelMain, "priv", priv);
+
+        //MCShader.SetBuffer(kernelMain, "DataBuffer", databuf);
     }
 
     public void CreateVertices()

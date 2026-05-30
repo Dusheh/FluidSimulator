@@ -1,0 +1,97 @@
+﻿#pragma kernel BoundFlow
+#pragma kernel EdgeFlow_X
+#pragma kernel EdgeFlow_Y
+#pragma kernel EdgeFlow_Z
+
+#pragma enable_d3d11_debug_symbols
+
+#define flowRate 0.1666
+
+StructuredBuffer<int> prop;
+RWStructuredBuffer<int> resu;
+
+StructuredBuffer<int> terrain;
+RWStructuredBuffer<int> data;
+RWStructuredBuffer<int> next;
+
+[numthreads(8,8,16)]
+void BoundFlow (uint3 id : SV_DispatchThreadID)
+{
+    int x = id.x + 1;
+    int y = id.y + 1;
+    int z = id.z + 1;
+    int StrideY = prop[7];
+    int StrideX = prop[8];
+       
+    int index = x * StrideX + y * StrideY + z;
+
+    int center = data[index];
+
+    int val = center - int(center * flowRate) * 6;
+
+    int indexStrideX = index + StrideX;
+    int index_StrideX = index - StrideX;
+    int indexStrideY = index + StrideY;
+    int index_StrideY = index - StrideY;
+    int indexStrideZ = index + 1;
+    int index_StrideZ= index - 1;
+
+    int tx1 = 1 - terrain[indexStrideX];
+    int tx_1 = 1 - terrain[index_StrideX];
+    int ty1 = 1 - terrain[indexStrideY];
+    int ty_1 = 1 - terrain[index_StrideY];
+    int tz1 = 1 - terrain[indexStrideZ];
+    int tz_1 = 1 - terrain[index_StrideZ];
+
+    val += (data[indexStrideX] * tx1    // x+1
+     + data[index_StrideX] * tx_1       // x-1
+     + data[indexStrideY]  * ty1        // y+1
+     + data[index_StrideY] * ty_1       // y-1
+     + data[indexStrideZ]  * tz1        // z+1
+     + data[index_StrideZ] * tz_1       // z-1
+        ) * flowRate; 
+
+    next[index] = val;
+}
+
+[numthreads(8,8,1)]
+void EdgeFlow_X (uint2 id : SV_DispatchThreadID)
+{
+    int y = id.x + 1;
+    int z = id.y + 1;
+    int prop8 = prop[8];
+    int prop7 = prop[7];
+    int index_x0 = y * prop7 + z;
+    int index_xMax = (prop[0] + 1) * prop8 + y * prop7 + z;
+
+    next[index_x0 + prop8] += data[index_x0] * flowRate;
+    next[index_xMax - prop8] += data[index_xMax] * flowRate;
+}
+
+[numthreads(8,8,1)]
+void EdgeFlow_Y (uint2 id : SV_DispatchThreadID)
+{
+    int x = id.x + 1;
+    int z = id.y + 1;
+    int prop8 = prop[8];
+    int prop7 = prop[7];
+    int index_y0 = x * prop8 + z;
+    int index_yMax = x * prop8 + (prop[1]+1) * prop7 + z;
+
+    next[index_y0 + prop7] += data[index_y0] * flowRate;
+    next[index_yMax - prop7] += data[index_yMax] * flowRate;
+}
+
+[numthreads(8,8,1)]
+void EdgeFlow_Z (uint2 id : SV_DispatchThreadID)
+{
+    int x = id.x + 1;
+    int y = id.y + 1;
+    int prop8 = prop[8];
+    int prop7 = prop[7];
+    int index_z0 = x * prop8 + y * prop7;
+    int index_zMax = x * prop8 + y * prop7 + prop[2] + 1;
+
+    next[index_z0 + 1] += data[index_z0] * flowRate;
+    next[index_zMax - 1] += data[index_zMax] * flowRate;
+}

@@ -1,0 +1,33 @@
+﻿#pragma kernel Refresh
+
+#pragma enable_d3d11_debug_symbols
+
+StructuredBuffer<int> prop; 
+RWStructuredBuffer<int> data;
+
+[numthreads(8,8,16)]
+void Refresh (uint3 id : SV_DispatchThreadID)
+{
+/*
+    int x = id.x + 1;
+    int y = id.y + 1;
+    int z = id.z + 1;
+    int StrideY = prop[7];
+    int StrideX = prop[8];
+       
+    int index = x * StrideX + y * StrideY + z;
+
+    int center = data[index];
+
+    int val = center - int(center * 0.142857) * 6;
+
+    val += (data[index + StrideX]       // x+1
+     + data[index - StrideX]            // x-1
+     + data[index + prop[7]]            // y+1
+     + data[index - prop[7]]            // y-1
+     + data[index + 1]                  // z+1
+     + data[index - 1]) * 0.142857;     // z-1
+
+    next[index] = val;
+*/
+}

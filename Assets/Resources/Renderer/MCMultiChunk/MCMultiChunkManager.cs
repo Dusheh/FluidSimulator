@@ -26,67 +26,18 @@ public class MCMultiChunkManager : MonoBehaviour
     public int chunkSize = 16;
     public int isoLevel = 50000;
 
-    public FluidSimulator simulator;
-    public FluidSimController simController;
+    public enum VoxelType { Fluid, Terrain };
+    public VoxelType voxelType;
+
+    public VoxelManager voxelManager;
     [SerializeField]
-    private ComputeShader fluidSimShader;
+    private ComputeShader updateShader;
     private ComputeBuffer prop;
-    
-    public void Initialize()
-    {
-        mapSizeX = chunkCountOfX * chunkSize;
-        mapSizeY = chunkCountOfY * chunkSize;
-        mapSizeZ = chunkCountOfZ * chunkSize;
-        simulator = new FluidSimulator(mapSizeX, mapSizeY, mapSizeZ);
-        simController = new FluidSimController();
-        simController.simulator = simulator;
-        simulator.CreateData();
-        prop = new ComputeBuffer(16, sizeof(int));
-        prop.SetData(new int[] { 0, 0, 0, 0, isoLevel, 0, 0,
-            (simulator.depth + 2) * (simulator.height + 2),
-            (simulator.depth + 2) * (simulator.height + 2) + (simulator.depth+2),
-            (simulator.depth + 2),
-            1 + (simulator.depth + 2) * (simulator.height + 2),
-            1 + (simulator.depth + 2) * (simulator.height + 2) + (simulator.depth + 2),
-            1 + (simulator.depth + 2),
-            (16 - 1) * 16 * 16,
-            16 * (16 - 1) * 16,
-            16 * 16 * (16 - 1)
-        });
+    public Material meshMaterial;
 
-        //simulator.data[simulator.GetIndex(1, 1, 1)] = 50_000000;
-
-        for (int i = 0; i < 10; i++)
-        {
-            //break;
-            simulator.data[Random.Range(0, simulator.data.Length)] = Random.Range(50000,100000);
-        }
-
-        simController.fluidSimShader = fluidSimShader;
-        simController.width = mapSizeX;
-        simController.height = mapSizeY;
-        simController.depth = mapSizeZ;
-        simController.Awake();
-        simController.CreateData(mapSizeX, mapSizeY, mapSizeZ);
-        for (int x = 0; x < chunkCountOfX; x++)
-        for (int y = 0; y < chunkCountOfY; y++)
-        for (int z = 0; z < chunkCountOfZ; z++)
-                {
-                    var chunk = new GameObject($"Chunk {x},{y},{z}");
-                    var mc = chunk.AddComponent(typeof(MCMultiChunk)) as MCMultiChunk;
-                    chunk.transform.parent = transform;
-                    
-                    mc.chunkSize = chunkSize;
-                    mc.transform.position = new Vector3(x, y, z) * (chunkSize - 1);
-                    mc.simulator = simulator;
-                    mc.isoLevel = isoLevel;
-                    mc.Initialize(x * (chunkSize - 1), y * (chunkSize - 1), z * (chunkSize - 1));
-                    mc.MCShader.SetBuffer(mc.kernelMain, "DataBuffer", simController.dataBuffer);
-                    mc.MCShader.SetBuffer(mc.kernelMain, "prop", prop);
-
-                    chunks.Add(mc);
-                }
-    }
+    public bool realtimeUpdate;
+    public bool refreshOnce;
+    public bool paused;
 
     public void Awake()
     {
@@ -94,13 +45,90 @@ public class MCMultiChunkManager : MonoBehaviour
         StartCoroutine(UpdateAllChunks());
     }
 
+    public void Initialize()
+    {
+        mapSizeX = chunkCountOfX * chunkSize;
+        mapSizeY = chunkCountOfY * chunkSize;
+        mapSizeZ = chunkCountOfZ * chunkSize;
+        if (voxelType == VoxelType.Fluid)
+        {
+            voxelManager = new FluidSimulator(mapSizeX, mapSizeY, mapSizeZ);
+            voxelManager.updateShader = updateShader;
+        }
+        else if (voxelType == VoxelType.Terrain)
+        {
+            voxelManager = new TerrainSimulator(mapSizeX, mapSizeY, mapSizeZ);
+            voxelManager.updateShader = updateShader;
+        }
+        realtimeUpdate = voxelManager.realtimeUpdate;
+        voxelManager.Initialize();
+        prop = new ComputeBuffer(16, sizeof(int));
+        prop.SetData(new int[] { 0, 0, 0, 0, isoLevel, 0, 0,
+            (voxelManager.depth + 2) * (voxelManager.height + 2),
+            (voxelManager.depth + 2) * (voxelManager.height + 2) + (voxelManager.depth+2),
+            (voxelManager.depth + 2),
+            1 + (voxelManager.depth + 2) * (voxelManager.height + 2),
+            1 + (voxelManager.depth + 2) * (voxelManager.height + 2) + (voxelManager.depth + 2),
+            1 + (voxelManager.depth + 2),
+            (16 - 1) * 16 * 16,
+            16 * (16 - 1) * 16,
+            16 * 16 * (16 - 1)
+        });
+
+        for (int x = 0; x < chunkCountOfX; x++)
+            for (int y = 0; y < chunkCountOfY; y++)
+                for (int z = 0; z < chunkCountOfZ; z++)
+                {
+                    var chunk = new GameObject($"Chunk {x},{y},{z}");
+                    var mc = chunk.AddComponent(typeof(MCMultiChunk)) as MCMultiChunk;
+                    chunk.transform.parent = transform;
+
+                    mc.chunkSize = chunkSize;
+                    mc.transform.position = new Vector3(x, y, z) * (chunkSize - 1);
+                    mc.isoLevel = isoLevel;
+                    mc.material = meshMaterial;
+                    mc.Initialize(x * (chunkSize - 1), y * (chunkSize - 1), z * (chunkSize - 1));
+                    mc.MCShader.SetBuffer(mc.kernelMain, "prop", prop);
+                    mc.MCShader.SetBuffer(mc.kernelMain, "DataBuffer", voxelManager.dataBuffer);
+                    //mc.MCShader.SetBuffer(mc.kernelMain, "DataBuffer", voxelManager.dataBuffer);
+
+                    chunks.Add(mc);
+                }
+        //if (!realtimeUpdate)
+        {
+            voxelManager.Refresh();
+            foreach (var i in chunks)
+            {
+                i.myUpdate();
+            }
+        }
+    }
+
     public void FixedUpdate()
     {
-        simController.FixedUpdate();
+        if (!realtimeUpdate || paused) return;
+        if(voxelType == VoxelType.Fluid)
+        {
+            if(Time.frameCount % 3 == 0) voxelManager.Refresh();
+        }
     }
 
     public void Update()
     {
+        if (!realtimeUpdate || paused) return;
+        if (voxelType == VoxelType.Fluid)
+        {
+            if (Time.frameCount % 3 == 0)
+                foreach (var i in chunks)
+                {
+                    i.myUpdate();
+                }
+        }
+    }
+
+    public void Refresh()
+    {
+        if(voxelType == VoxelType.Fluid) voxelManager.Refresh();
         foreach (var i in chunks)
         {
             i.myUpdate();
@@ -109,7 +137,7 @@ public class MCMultiChunkManager : MonoBehaviour
 
     public void OnDestroy()
     {
-        simController.Dispose();
+        voxelManager.Dispose();
         prop.Dispose();
     }
 
@@ -117,6 +145,7 @@ public class MCMultiChunkManager : MonoBehaviour
     {
         while (true)
         {
+            if (!refreshOnce && (!realtimeUpdate || paused)) yield return null;
             for (int i = 0; i < chunks.Count; i++)
             {
                 var chunk = chunks[i];

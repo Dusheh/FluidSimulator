@@ -306,14 +306,16 @@ void CSMain(uint3 id : SV_DispatchThreadID)
     int nx = vx + priv[0], ny = vy + priv[1], nz = vz + priv[2]; 
     int cubeIndex = 0;
     int baseIndex = (nx + 1) * prop[7] + (ny + 1) * prop[9] + (nz + 1);
-    cubeIndex |= DataBuffer[baseIndex] > prop[4] ? 1 : 0;
-    cubeIndex |= DataBuffer[baseIndex + prop[7]] > prop[4] ? 2 : 0;
-    cubeIndex |= DataBuffer[baseIndex + prop[8]] > prop[4] ? 4 : 0;
-    cubeIndex |= DataBuffer[baseIndex + prop[9]] > prop[4] ? 8 : 0;
-    cubeIndex |= DataBuffer[baseIndex + 1] > prop[4] ? 16 : 0;
-    cubeIndex |= DataBuffer[baseIndex + prop[10]] > prop[4] ? 32 : 0;
-    cubeIndex |= DataBuffer[baseIndex + prop[11]] > prop[4] ? 64 : 0;
-    cubeIndex |= DataBuffer[baseIndex + prop[12]] > prop[4] ? 128 : 0;
+    int prop4 = prop[4];
+
+    cubeIndex |= DataBuffer[baseIndex] > prop4 ? 1 : 0;
+    cubeIndex |= DataBuffer[baseIndex + prop[7]] > prop4 ? 2 : 0;
+    cubeIndex |= DataBuffer[baseIndex + prop[8]] > prop4 ? 4 : 0;
+    cubeIndex |= DataBuffer[baseIndex + prop[9]] > prop4 ? 8 : 0;
+    cubeIndex |= DataBuffer[baseIndex + 1] > prop4 ? 16 : 0;
+    cubeIndex |= DataBuffer[baseIndex + prop[10]] > prop4 ? 32 : 0;
+    cubeIndex |= DataBuffer[baseIndex + prop[11]] > prop4 ? 64 : 0;
+    cubeIndex |= DataBuffer[baseIndex + prop[12]] > prop4 ? 128 : 0;
 
     if (cubeIndex == 0 || cubeIndex == 255) return;
 

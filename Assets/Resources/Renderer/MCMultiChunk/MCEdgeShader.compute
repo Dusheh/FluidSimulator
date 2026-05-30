@@ -1,0 +1,68 @@
+﻿#pragma kernel CSMain
+
+StructuredBuffer<int> DataBuffer;
+RWStructuredBuffer<uint> Indices;
+//RWStructuredBuffer<uint> IndexCounter;
+
+StructuredBuffer<int> prop;
+// [0]  Null
+// [1]  Null, [2]Null, [3]Null, [4]isoLevel, [5]Null, [6]Null,
+// [7]  (simulator.depth + 2) * (simulator.height + 2)
+// [8]  (simulator.depth + 2) * (simulator.height + 2) + (simulator.depth + 2)
+// [9]  (simulator.depth + 2)
+// [10] 1 + (simulator.depth + 2) * (simulator.height + 2)
+// [11] 1 + (simulator.depth + 2) * (simulator.height + 2) + (simulator.depth + 2)
+// [12] 1 + (simulator.depth + 2)
+// [13] cX
+// [14] cY
+// [15] cZ
+StructuredBuffer<int> priv;
+// [0]startX, [1]startY, [2]startZ
+
+RWStructuredBuffer<uint> IndicesX0;
+RWStructuredBuffer<uint> IndicesX1;
+RWStructuredBuffer<uint> IndicesY0;
+RWStructuredBuffer<uint> IndicesY1;
+RWStructuredBuffer<uint> IndicesZ0;
+RWStructuredBuffer<uint> IndicesZ1;
+RWStructuredBuffer<uint> IndexCounter; // [6] x0 x1 y0 y1 z0 z1
+
+[numthreads(1, 1, 1)]
+void CSMain(uint3 id : SV_DispatchThreadID)
+{
+    uint3 idz = id.zyx;
+    uint3 idy = id;
+    uint3 idx = id;
+    idz.x = 0;
+    idy.y = 0;
+    idx.z = 0;
+    EdgeZ(idz);
+    EdgeY(idy);
+    EdgeX(idx);
+}
+
+void EdgeZ(uint3 id)
+{
+    if(id.z > depth) return;
+    if(id.y > height) return;
+
+    int iso = prop[4];
+    int cubeIndex = 0;
+    cubeIndex |= data[x + id.z + id.y * (depth + 2)] > iso ? 1 : 0;
+    cubeIndex |= data[x + (id.z + 1) + id.y * (depth + 2)] > iso ? 2 : 0;
+    cubeIndex |= data[x + id.z + (id.y + 1) * (depth + 2)] > iso ? 4 : 0;
+    cubeIndex |= data[x + (id.z + 1) + (id.y + 1) * (depth + 2)] > iso ? 8 : 0;
+
+    IndicesZ0[]
+    
+}
+
+void EdgeY(uint3 id)
+{
+    
+}
+
+void EdgeX(uint3 id)
+{
+    
+}
